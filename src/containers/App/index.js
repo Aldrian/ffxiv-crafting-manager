@@ -19,15 +19,25 @@ const ItemList = styled('div')`
 	max-width: 1600px;
 	margin-left: auto;
 	margin-right: auto;
-	margin-top: 120px;
+	margin-top: 50px;
+`;
+
+const Loading = styled('div')`
+	font-size: 70px;
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
 `;
 
 class App extends Component {
 	render() {
 		return (
 			<Query query={GET_ITEMS}>
-				{({loading, error, data}) => {
-					if (loading) return <p>Loading</p>;
+				{({
+					loading, error, data, refetch,
+				}) => {
+					if (loading) return <Loading>Chargement...</Loading>;
 					if (error) return <p>Error!: ${error.toString()}</p>;
 					const {allItems} = data;
 					const finals = allItems.filter(
@@ -35,6 +45,9 @@ class App extends Component {
 					);
 					const craftables = allItems.filter(
 						item => item.type === 'CRAFTABLE',
+					);
+					const timeables = allItems.filter(
+						item => item.type === 'TIMEABLE',
 					);
 					const gatherables = allItems.filter(
 						item => item.type === 'GATHERABLE',
@@ -46,13 +59,14 @@ class App extends Component {
 						item => item.type === 'BUYABLE',
 					);
 
+					console.log(finals);
+					console.log(timeables);
+
 					return (
 						<AppMain>
 							<ItemSearch
 								storedItems={allItems}
-								refetch={() => {
-									this.setState({shouldRefetch: true});
-								}}
+								refetch={refetch}
 							/>
 							<ItemList>
 								{finals
@@ -67,14 +81,21 @@ class App extends Component {
 									&& craftables.map(item => (
 										<Item item={item} />
 									))}
+								<br />
+								{timeables
+									&& timeables.map(item => <Item item={item} />)}
+								<br />
 								{gatherables
 									&& gatherables.map(item => (
 										<Item item={item} />
 									))}
+								<br />
 								{lootables
 									&& lootables.map(item => <Item item={item} />)}
+								<br />
 								{buyables
 									&& buyables.map(item => <Item item={item} />)}
+								<br />
 							</ItemList>
 						</AppMain>
 					);

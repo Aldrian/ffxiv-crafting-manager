@@ -8,6 +8,7 @@ export const GET_ITEMS = gql`
 			name
 			type
 			stock
+			job
 			soldPrice
 			recipe {
 				amount
@@ -16,6 +17,7 @@ export const GET_ITEMS = gql`
 					itemId
 					name
 					stock
+					job
 					soldPrice
 				}
 				usedIn {
@@ -23,6 +25,7 @@ export const GET_ITEMS = gql`
 					itemId
 					name
 					stock
+					job
 					soldPrice
 				}
 			}

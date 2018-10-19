@@ -22,7 +22,14 @@ const AutocompleteMain = styled('div')`
 	width: 600px;
 	margin-left: auto;
 	margin-right: auto;
-	margin-top: 80px;
+	margin-top: 30px;
+`;
+const Loading = styled('div')`
+	font-size: 70px;
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
 `;
 
 class ItemSearch extends Component {
@@ -32,6 +39,7 @@ class ItemSearch extends Component {
 			searchData: [],
 			searchString: '',
 			searchError: false,
+			addingItem: false,
 			errors: {
 				search: false,
 				notCraftable: false,
@@ -56,8 +64,17 @@ class ItemSearch extends Component {
 	getItemData = async (item, createItem, createRecipeItem) => {
 		// Utils
 		const searchItemById = id => `https://www.garlandtools.org/db/doc/item/fr/3/${id}.json`;
-		const getType = (e) => {
-			if (e.nodes || e.fishingSpots || e.reducedFrom) return 'GATHERABLE';
+		const getType = (e, searchData) => {
+			if (
+				e.reducedFrom
+				|| (e.nodes
+					&& searchData.partials.find(
+						i => i.id === String(e.nodes[0]),
+					)
+					&& searchData.partials.find(i => i.id === String(e.nodes[0]))
+						.obj.ti)
+			) return 'TIMEABLE';
+			if (e.nodes || e.fishingSpots) return 'GATHERABLE';
 			if (e.drops) return 'LOOTABLE';
 			if (e.craft) return 'CRAFTABLE';
 			return 'BUYABLE';
@@ -65,7 +82,6 @@ class ItemSearch extends Component {
 
 		const {storedItems} = this.props;
 
-		console.log(storedItems);
 		// Do not move forwards if the item is already stored
 		if (storedItems.find(e => e.itemId === item.id)) {
 			console.log('already crafted');
@@ -84,12 +100,15 @@ class ItemSearch extends Component {
 			const searchData = await search.json();
 			const {ingredients} = searchData;
 
+			console.log(searchData);
+
 			// Check if the item is craftable
 			if (!ingredients) {
 				this.setState({
 					errors: {
 						...this.state.errors,
 						notCraftable: true,
+						addingItem: false,
 					},
 				});
 				return;
@@ -98,7 +117,7 @@ class ItemSearch extends Component {
 			const items = ingredients.map(e => ({
 				name: e.name,
 				itemId: String(e.id),
-				type: getType(e),
+				type: getType(e, searchData),
 				job: e.craft && e.craft[0].job,
 			}));
 
@@ -112,23 +131,6 @@ class ItemSearch extends Component {
 			const addedItems = await Promise.all(
 				itemsToStore.map(item => createItem({
 					variables: item,
-					update: (cache, {data: {createItem}}) => {
-						const data = cache.readQuery({
-							query: GET_ITEMS,
-						});
-
-						data.allItems.push(createItem);
-						try {
-							cache.writeQuery({
-								query: GET_ITEMS,
-								data,
-							});
-							this.props.refetch();
-						}
-						catch (e) {
-							console.log(e);
-						}
-					},
 				})),
 			);
 
@@ -186,33 +188,12 @@ class ItemSearch extends Component {
 			const addedRecipes = await Promise.all(
 				recipesToAdd.map(recipe => createRecipeItem({
 					variables: recipe,
-					update: (cache, {data: {createRecipeItem}}) => {
-						const data = cache.readQuery({
-							query: GET_ITEMS,
-						});
-						const item = data.allItems.find(
-							e => e.id === createRecipeItem.usedIn.id,
-						);
-
-						item.recipe.push(createRecipeItem);
-						try {
-							cache.writeQuery({
-								query: GET_ITEMS,
-								data,
-							});
-							this.props.refetch();
-						}
-						catch (e) {
-							console.log(e);
-						}
-					},
 				})),
 			);
-
 			// Create final item data
 			const itemData = {
 				name: searchData.item.name,
-				itemId: String(searchData.item.name),
+				itemId: String(searchData.item.id),
 				type: 'FINAL',
 				job: searchData.item.craft[0].job,
 			};
@@ -220,26 +201,7 @@ class ItemSearch extends Component {
 			// Add them in the store
 			const addedFinalItem = await createItem({
 				variables: itemData,
-				update: (cache, {data: {createItem}}) => {
-					const data = cache.readQuery({
-						query: GET_ITEMS,
-					});
-
-					data.allItems.push(createItem);
-					try {
-						cache.writeQuery({
-							query: GET_ITEMS,
-							data,
-						});
-						this.props.refetch();
-					}
-					catch (e) {
-						console.log(e);
-					}
-				},
 			});
-
-			console.log(addedFinalItem);
 			const finalRecipe = [];
 
 			searchData.item.craft[0].ingredients.forEach((ingredient) => {
@@ -258,29 +220,21 @@ class ItemSearch extends Component {
 			const addedFinalRecipes = await Promise.all(
 				finalRecipe.map(recipe => createRecipeItem({
 					variables: recipe,
-					update: (cache, {data: {createRecipeItem}}) => {
-						const data = cache.readQuery({
-							query: GET_ITEMS,
-						});
-						const item = data.allItems.find(
-							e => e.id === createRecipeItem.usedIn.id,
-						);
-
-						item.recipe.push(createRecipeItem);
-						try {
-							cache.writeQuery({
-								query: GET_ITEMS,
-								data,
-							});
-							this.props.refetch();
-						}
-						catch (e) {
-							console.log(e);
-						}
-					},
 				})),
 			);
-
+		}
+		catch (e) {
+			console.log(e);
+			this.setState({
+				errors: {
+					...this.state.errors,
+					notFound: true,
+					addingItem: false,
+				},
+			});
+		}
+		finally {
+			this.props.refetch();
 			this.setState({
 				searchData: [],
 				searchString: '',
@@ -290,15 +244,7 @@ class ItemSearch extends Component {
 					notCraftable: false,
 					notFound: false,
 					alreadyAdded: false,
-				},
-			});
-		}
-		catch (e) {
-			console.log(e);
-			this.setState({
-				errors: {
-					...this.state.errors,
-					notFound: true,
+					addingItem: false,
 				},
 			});
 		}
@@ -309,6 +255,7 @@ class ItemSearch extends Component {
 			searchData, searchString, searchError, errors,
 		} = this.state;
 
+		if (this.state.addingItem) return <Loading>Ajout de l'item...</Loading>;
 		return (
 			<ItemSearchMain>
 				<Mutation mutation={CREATE_ITEM}>
@@ -326,11 +273,25 @@ class ItemSearch extends Component {
 													background: isHighlighted
 														? 'lightgray'
 														: 'white',
+													paddingTop: '4px',
+													paddingBottom: '4px',
 												}}
 											>
 												{item.obj.n}
 											</div>
 										)}
+										menuStyle={{
+											borderRadius: '3px',
+											boxShadow:
+												'0 2px 12px rgba(0, 0, 0, 0.1)',
+											background: 'white',
+											padding: '2px 0',
+											fontSize: '90%',
+											position: 'fixed',
+											overflow: 'auto',
+											maxHeight: '50%', // TODO: don't cheat, let it flow to the bottom
+											zIndex: 10000,
+										}}
 										value={searchString}
 										onChange={(e) => {
 											this.setState({
