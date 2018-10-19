@@ -6,23 +6,24 @@ export const GET_ITEMS = gql`
 			id
 			itemId
 			name
+			type
+			stock
 			soldPrice
 			recipe {
 				amount
-				item {
+				ingredient {
 					id
 					itemId
 					name
+					stock
 					soldPrice
-					recipe {
-						amount
-						item {
-							id
-							itemId
-							name
-							soldPrice
-						}
-					}
+				}
+				usedIn {
+					id
+					itemId
+					name
+					stock
+					soldPrice
 				}
 			}
 		}
