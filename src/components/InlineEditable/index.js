@@ -27,6 +27,12 @@ class InlineEditable extends Component {
 		});
 	};
 
+	componentWillReceiveProps(newProps) {
+		if (newProps.value !== this.state.value) {
+			this.setState({value: newProps.value});
+		}
+	}
+
 	render() {
 		const {isEditing, value} = this.state;
 		const {type, placeholder} = this.props;

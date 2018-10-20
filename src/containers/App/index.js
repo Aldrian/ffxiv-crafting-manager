@@ -59,9 +59,6 @@ class App extends Component {
 						item => item.type === 'BUYABLE',
 					);
 
-					console.log(finals);
-					console.log(timeables);
-
 					return (
 						<AppMain>
 							<ItemSearch
@@ -71,7 +68,11 @@ class App extends Component {
 							<ItemList>
 								{finals
 									&& finals.map(item => (
-										<Item item={item} />
+										<Item
+											item={item}
+											storedItems={allItems}
+											refetch={refetch}
+										/>
 									))}{' '}
 								<br />
 								<br />
@@ -79,7 +80,10 @@ class App extends Component {
 								<br />
 								{craftables
 									&& craftables.map(item => (
-										<Item item={item} />
+										<Item
+											item={item}
+											storedItems={allItems}
+										/>
 									))}
 								<br />
 								{timeables

@@ -22,9 +22,9 @@ export const gray20 = '#f4f5f7';
 export const gray30 = '#4d4d4d';
 export const gray70 = '#b3b3b3';
 export const gray80 = '#cccccc';
-export const signalGreen = '#36b37e';
-export const signalOrange = '#ffab00';
-export const signalRed = '#ff5630';
+export const signalGreen = '#36b37e44';
+export const signalOrange = '#ffab0044';
+export const signalRed = '#ff563044';
 // Typography
 
 export const Body = styled('div')`
